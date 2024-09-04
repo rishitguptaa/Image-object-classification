@@ -1,58 +1,27 @@
-# Image-Recognition-Using-Python-OpenCV
+# Real-Time-Object-Detection-With-OpenCV
 
+### Description
 
-Complete face-detection app using Python and the OpenCV module
-Detects faces in a video stream (webcam, but can be extended/modified to read video input from several other sources) of all complexions in a variety of lighting conditions.
+This project aims to do real-time object detection through a laptop camera or webcam using OpenCV and MobileNetSSD. The idea is to loop over each frame of the video stream, detect objects like person, chair, dog, etc. and bound each detection in a box.
 
-## How To Use
+### How to run this code?
 
-Ensure you have the latest version of Python installed. Go to [https://python.org/downloads](https://python.org/downloads) to download the latest release for your local computer.
+**Step 1:** Create a directory in your local machine and cd into it
 
-### 1. Create a new virtual environment ->
+**Step 2:** Clone the repository and cd into the folder:
 
-```bash
-virtualenv image_recognition_with_python_env
+**Step 3:** Install all the necessary libraries. I used Windows for this project. These are some of the libraries I had to install:
+
+```
+pip install opencv-python
+pip install matplotlib
+pip install imutils
 ```
 
-Note: If you do not have `virtualenv` installed (you'll know if the command above outputs an error), install `virtualenv` with ->
+**Step 4:** To start your video stream and real-time object detection, run the following command:
 
-```bash
-$ pip install virtualenv
+```
+python main.py --prototxt MobileNetSSD_deploy.prototxt.txt --model MobileNetSSD_deploy.caffemodel
 ```
 
-
-
-### 2. Clone this repository ->
-
-```bash
-$ git clone https://github.com/rishitguptaa/Image-recognition.git
-```
-
-
-
-### 3. Enter the newly created virtual environment and start it up ->
-
-On Windows (using a bash shell like Git Bash):
-```bash
-$ source scripts/activate
-```
-On Windows (using Command Prompt):
-```bash
-$ source \Scripts\activate
-```
-
-### 4. Install the required Python modules -> 
-
-```bash
-$ pip install requirements.txt
-```
-
-### 5. Start the app ->
-
-```bash
-$ python main.py
-```
-
-### 6. Quit the app -> 
-
-Hit Ctrl + C (Windows)
+**Step 5:** To terminate press ctrl+c on windows or 'q' key.

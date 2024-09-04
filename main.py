@@ -1,53 +1,80 @@
+# How to run?: python main.py --prototxt MobileNetSSD_deploy.prototxt.txt --model MobileNetSSD_deploy.caffemodel
+
+from imutils.video import VideoStream
+from imutils.video import FPS
+import numpy as np
+import argparse
+import imutils
+import time
 import cv2
-import sys
-import logging as log
-import datetime as dt
-from time import sleep
 
-cascPath = "haarcascade_frontalface_default.xml"
-faceCascade = cv2.CascadeClassifier(cascPath)
-log.basicConfig(filename='webcam.log',level=log.INFO)
+ap = argparse.ArgumentParser()
+ap.add_argument("-p", "--prototxt", required=True,
+	help="path to Caffe 'deploy' prototxt file")
+ap.add_argument("-m", "--model", required=True,
+	help="path to Caffe pre-trained model")
+ap.add_argument("-c", "--confidence", type=float, default=0.4,
+	help="minimum probability to filter weak predictions")
+args = vars(ap.parse_args())
 
-video_capture = cv2.VideoCapture(0)
-anterior = 0
+CLASSES = ["aeroplane", "background", "bicycle", "bird", "boat",
+           "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+           "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+           "sofa", "train", "tvmonitor"]
+
+COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
+
+print("[INFO] loading model...")
+net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
+print("[INFO] starting video stream...")
+vs = VideoStream(src=0).start()
+time.sleep(2.0)
+fps = FPS().start()
 
 while True:
-    if not video_capture.isOpened():
-        print('Unable to load camera.')
-        sleep(5)
-        pass
+	frame = vs.read()
+	frame = imutils.resize(frame, width=400)
+	print(frame.shape) 
+	(h, w) = frame.shape[:2]
+	resized_image = cv2.resize(frame, (300, 300))
+	blob = cv2.dnn.blobFromImage(resized_image, (1/127.5), (300, 300), 127.5, swapRB=True)
+	
+	net.setInput(blob) 
+	
+	predictions = net.forward()
 
-    # Capture frame-by-frame
-    ret, frame = video_capture.read()
+	
+	for i in np.arange(0, predictions.shape[2]):
+		
+		confidence = predictions[0, 0, i, 2]
+		
+		if confidence > args["confidence"]:
+			
+			idx = int(predictions[0, 0, i, 1])
+			
+			box = predictions[0, 0, i, 3:7] * np.array([w, h, w, h])
+			
+			(startX, startY, endX, endY) = box.astype("int")
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+			# Get the label with the confidence score
+			label = "{}: {:.2f}%".format(CLASSES[idx], confidence * 100)
+			print("Object detected: ", label)
+			# Draw a rectangle across the boundary of the object
+			cv2.rectangle(frame, (startX, startY), (endX, endY),
+				COLORS[idx], 2)
+			y = startY - 15 if startY - 15 > 15 else startY + 15
+			
+			cv2.putText(frame, label, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
 
-    faces = faceCascade.detectMultiScale(
-        gray,
-        scaleFactor=1.1,
-        minNeighbors=5,
-        minSize=(30, 30)
-    )
+	# show the output frame
+	cv2.imshow("Frame", frame)
+	key = cv2.waitKey(1) & 0xFF
+	if key == ord("q"):
+		break
+	fps.update()
 
-    # Draw a rectangle around the faces
-    for (x, y, w, h) in faces:
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-
-    if anterior != len(faces):
-        anterior = len(faces)
-        log.info("faces: "+str(len(faces))+" at "+str(dt.datetime.now()))
-
-
-    # Display the resulting frame
-    cv2.imshow('Video', frame)
-
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-    # Display the resulting frame
-    cv2.imshow('Video', frame)
-
-# When everything is done, release the capture
-video_capture.release()
+fps.stop()
+print("[INFO] Elapsed Time: {:.2f}".format(fps.elapsed()))
+print("[INFO] Approximate FPS: {:.2f}".format(fps.fps()))
 cv2.destroyAllWindows()
+vs.stop()
